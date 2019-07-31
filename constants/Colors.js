@@ -1,0 +1,26 @@
+const tintColor = '#2f95dc';
+
+export default {
+  tintColor,
+  tabIconDefault: '#ccc',
+  tabIconSelected: tintColor,
+  tabBar: '#fefefe',
+  errorBackground: 'red',
+  errorText: '#fff',
+  warningBackground: '#EAEB5E',
+  warningText: '#666804',
+  noticeBackground: tintColor,
+  noticeText: '#fff',
+  black: 'black',
+  white: '#FFF',
+  green: 'green',
+  shadow: 'rgba(0, 0, 0, 0.4)',
+  buttonRed: '#EC610D',
+  SPACE_CADET: '#1D3461',
+  DARK_CERULEAN: '#1F487E',
+  darkGrey: '#555',
+  cartoonBlue: '#00aeef',
+  green13: '#27a770',
+  grey: '#BBB',
+  yellow14: '#ff9900',
+};
