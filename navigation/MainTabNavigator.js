@@ -216,7 +216,7 @@ HomeStack.navigationOptions = {
 export default createMaterialTopTabNavigator(
   {
     AnimateStack,
-    HomeStack,
+    // HomeStack,
   },
   {
     swipeEnabled: false,

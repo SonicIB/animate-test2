@@ -4,11 +4,19 @@ import {
   Text,
   StyleSheet,
   FlatList,
-  TouchableOpacity,
+  // TouchableOpacity,
   Animated,
 } from 'react-native'
 import Constants from 'expo-constants'
+import { Ionicons } from '@expo/vector-icons'
 import Swipeable from 'react-native-gesture-handler/Swipeable'
+import {
+  PanGestureHandler,
+  State as GestureState,
+  TouchableOpacity,
+} from 'react-native-gesture-handler'
+
+import Layout from '../constants/Layout'
 
 const DATA = [
   { id: '1', title: 'title 1' },
@@ -20,20 +28,138 @@ const DATA = [
 ]
 
 export default class AnimateScreen21 extends Component {
+  state = {
+    shadowTitle: 'shadow',
+    data: DATA,
+  }
 
-  listSeparator = () => (
-    <View style={styles.separator} />
-  )
+  panOnGentureEvent = (nativeEvent, item, index) => {
+    if (nativeEvent.state === GestureState.ACTIVE) {
+      this.shadow.setNativeProps({
+        top: nativeEvent.absoluteY,
+      })
+      const indexNow = this.positionToIndex(nativeEvent.absoluteY)
+      if (indexNow < this.state.data.length) {
+        this.separatorRef[indexNow].setNativeProps({
+          height: 50,
+        })
+      }
+      if (this.indexPast !== indexNow) {
+        if (this.indexPast < this.state.data.length) {
+          this.separatorRef[this.indexPast].setNativeProps({
+            height: 0,
+          })
+        }
+        this.indexPast = indexNow
+      }
+    }
+  }
 
-  listItem = ({ item }) => (
-    <Swipeable
-      renderLeftActions={this.leftAction}
-      renderRightActions={this.rightAction}
-    >
-      <View style={styles.item}>
-        <Text>{item.title}</Text>
-      </View>
-    </Swipeable>
+  panOnHandlerStateChange = (nativeEvent, item, index) => {
+    if (nativeEvent.state === GestureState.BEGAN) {
+      this.setState({ shadowTitle: item.title })
+    }
+    if (nativeEvent.state === GestureState.ACTIVE) {
+      this.shadow.setNativeProps({
+        display: 'flex',
+        position: 'absolute',
+        top: nativeEvent.absoluteY,
+      })
+      this.itemRef[index].setNativeProps({
+        opacity: 0,
+        height: 1,
+      })
+      this.indexPast = index
+    }
+    if (nativeEvent.oldState === GestureState.ACTIVE) {
+      const { data } = this.state
+      this.shadow.setNativeProps({
+        display: 'none',
+        position: 'relative',
+      })
+      this.itemRef[index].setNativeProps({
+        opacity: 1,
+        height: 50,
+      })
+      let indexNow = this.positionToIndex(nativeEvent.absoluteY)
+      if (indexNow < data.length) {
+        this.separatorRef[indexNow].setNativeProps({
+          height: 0,
+        })
+      }
+      if (index > indexNow) {
+        const arr = [...data.slice(0, indexNow), data[index], ...data.slice(indexNow, index), ...data.slice(index + 1)]
+        this.setState({ data: arr })
+      } else if (index < indexNow) {
+        const arr = [...data.slice(0, index), ...data.slice(index + 1, indexNow), data[index], ...data.slice(indexNow)]
+        this.setState({ data: arr })
+      }
+    }
+  }
+
+  itemsHeight = {}
+
+  setItemHeight = (event, id) => {
+    this.itemsHeight[id] = event.layout.height
+  }
+
+  positionToIndex = (position) => {
+    const { data } = this.state
+    let p = position - Constants.statusBarHeight
+    let i = 0
+    let h = 0
+    for (i; i < data.length; i += 1) {
+      h += this.itemsHeight[data[i].id]
+      if (h > p) return i
+    }
+    return i
+  }
+
+  // separatorRef = {}
+
+  // listSeparator = ({ leadingItem }) => (
+  //   <View
+  //     ref={ref => this.separatorRef[leadingItem.id] = ref}
+  //     style={styles.separator}
+  //   />
+  // )
+
+  itemRef = {}
+  separatorRef = {}
+
+  listItem = ({ item, index }) => (
+    <View>
+      <View ref={ref => this.separatorRef[index] = ref} />
+      <Swipeable
+        renderLeftActions={this.leftAction}
+        renderRightActions={this.rightAction}
+      >
+        <View
+          ref={ref => (this.itemRef[index] = ref)}
+          style={{ flexDirection: 'row', backgroundColor: '#FFF' }}
+          onLayout={({ nativeEvent }) => this.setItemHeight(nativeEvent, item.id)}
+        >
+          <TouchableOpacity
+            style={styles.leftItem}
+          // onPress={() => separators.highlight()}
+          >
+            <Text>{item.title}</Text>
+          </TouchableOpacity>
+          <PanGestureHandler
+            onGestureEvent={({ nativeEvent }) => this.panOnGentureEvent(nativeEvent, item, index)}
+            onHandlerStateChange={({ nativeEvent }) => this.panOnHandlerStateChange(nativeEvent, item, index)}
+            activeOffsetY={[-3, 3]}
+          >
+            <View style={styles.rightItem}>
+              <Ionicons
+                name="ios-menu"
+                size={20}
+              />
+            </View>
+          </PanGestureHandler>
+        </View>
+      </Swipeable>
+    </View>
   )
 
   leftAction = (progress, dragX) => {
@@ -77,14 +203,34 @@ export default class AnimateScreen21 extends Component {
   }
 
   render() {
+    const {
+      shadowTitle,
+      data
+    } = this.state
+
     return (
       <View style={styles.contain}>
         <FlatList
-          data={DATA}
+          data={data}
           keyExtractor={item => item.id}
           renderItem={this.listItem}
-          ItemSeparatorComponent={this.listSeparator}
+        // ItemSeparatorComponent={this.listSeparator}
+        // ListHeaderComponent={this.listHeader}
         />
+        <View
+          ref={ref => this.shadow = ref}
+          style={styles.shadow}
+        >
+          <View style={{ flex: 5, justifyContent: 'center', alignItems: 'center' }}>
+            <Text>{shadowTitle}</Text>
+          </View>
+          <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+            <Ionicons
+              name="ios-menu"
+              size={20}
+            />
+          </View>
+        </View>
       </View>
     )
   }
@@ -96,16 +242,21 @@ const styles = StyleSheet.create({
     backgroundColor: '#FFF',
     paddingTop: Constants.statusBarHeight,
   },
-  item: {
+  leftItem: {
     minHeight: 50,
+    width: Layout.window.width * 5 / 6,
     justifyContent: 'center',
-    backgroundColor: '#FFF',
-    // borderBottomWidth: 1,
-    paddingLeft: 10,
+    alignItems: 'center',
+  },
+  rightItem: {
+    minHeight: 50,
+    width: Layout.window.width / 6,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
   separator: {
     opacity: 0.3,
-    borderTopWidth: 1,
+    borderWidth: 1,
     marginHorizontal: 5,
   },
   leftAction: {
@@ -123,5 +274,16 @@ const styles = StyleSheet.create({
     color: '#FFF',
     fontWeight: 'bold',
     padding: 20,
+  },
+  shadow: {
+    display: 'none',
+    position: 'relative',
+    height: 50,
+    width: Layout.window.width,
+    flexDirection: 'row',
+    backgroundColor: '#999',
+    opacity: 0.5,
+    // justifyContent: 'center',
+    // alignItems: 'center',
   }
 })
